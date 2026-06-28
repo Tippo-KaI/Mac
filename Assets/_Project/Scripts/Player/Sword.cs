@@ -110,6 +110,7 @@ public class Sword : MonoBehaviour
 
     public void OnTriggerEnter2D(Collider2D other)
     {
+        if (isStuck) return;
         if (other.gameObject.layer == LayerMask.NameToLayer("Enemy"))
         {
             Health enemyHealth = other.GetComponent<Health>();

@@ -51,15 +51,6 @@ public class WalkerPassive : MonoBehaviour
         localScale.x *= -1;
         transform.localScale = localScale;
     }
-    
-    // XỬ LÝ VA CHẠM: Người chơi chạm vào thì mất máu
-    private void OnCollisionEnter2D(Collision2D collision)
-    {
-        if (collision.gameObject.CompareTag("Player"))
-        {
-            Debug.Log("Quái chạm vào Player rồi!");
-        }
-    }
 
     private void OnDrawGizmos()
     {
