@@ -94,22 +94,23 @@ public class PlayerMovement : MonoBehaviour
         horizontalInput = Input.GetAxisRaw("Horizontal");
 
         if (Input.GetButtonDown("Jump")) jumpInput = true;
+
         if (Input.GetMouseButtonDown(0))
         {
             if (activeSword == null)
             {
                 attackInput = true;
             }
-            else
-            {
-                RecallSword();
-            }
+        }
+
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            RecallSword();
         }
 
         if (Input.GetMouseButtonDown(1)) throwInput = true;
     }
 
-    // Viết thêm hàm này vào bên dưới GatherInput hoặc bất cứ đâu trong class
     void RecallSword()
     {
         if (activeSword != null)
