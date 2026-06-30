@@ -7,6 +7,14 @@ public class Health : MonoBehaviour
     [SerializeField] private float maxHealth = 100f;
     private float currentHealth;
 
+    [Header("I-Frames & Flashing")]
+    [SerializeField] private float invincibleDuration = 1.5f; // Thời gian bất tử
+    [SerializeField] private float flashInterval = 0.15f;     // Tốc độ nhấp nháy
+    private bool isInvincible = false;
+    private SpriteRenderer spriteRenderer;
+    private int normalPlayerLayer;
+    private int invinciblePlayerLayer;
+
     [Header("KnockBack")]
     [SerializeField] private float knockbackForceX = 8f;
     [SerializeField] private float knockbackForceY = 5f;
@@ -17,24 +25,42 @@ public class Health : MonoBehaviour
 
     private Rigidbody2D rb;
     private PlayerMovement playerMovement;
+
     void Start()
     {
         currentHealth = maxHealth;
         rb = GetComponent<Rigidbody2D>();
-        if(isPlayer)
+        spriteRenderer = GetComponent<SpriteRenderer>();
+
+        if (isPlayer)
         {
             playerMovement = GetComponent<PlayerMovement>();
+
+            // Lấy ID của các Layer (Hãy chắc chắn bạn đã tạo 2 Layer này trong Unity)
+            normalPlayerLayer = LayerMask.NameToLayer("Player");
+            invinciblePlayerLayer = LayerMask.NameToLayer("PlayerInvincible");
         }
     }
 
     public void TakeDamage(float damageAmount, Vector2 attackerPosition)
     {
+        // Nếu là Player và đang trong trạng thái bất tử thì bỏ qua nhận dame
+        if (isPlayer && isInvincible) return;
+
         currentHealth -= damageAmount;
         Debug.Log(gameObject.name + "Mau con: " + currentHealth);
-        if(currentHealth > 0)
+
+        if (currentHealth > 0)
         {
             TriggerKnockBack(attackerPosition);
-        } else
+
+            // Nếu là Player thì kích hoạt thêm chu kỳ bất tử + nhấp nháy
+            if (isPlayer)
+            {
+                StartCoroutine(BecomeInvincibleRoutine());
+            }
+        }
+        else
         {
             Die();
         }
@@ -42,20 +68,12 @@ public class Health : MonoBehaviour
 
     private void TriggerKnockBack(Vector2 attackerPosition)
     {
-        if (rb == null)
-        {
-            return;
-        }
-        // 1. Xác định hướng đẩy lùi (Ngược hướng với kẻ tấn công)
+        if (rb == null) return;
+
         float knockbackDirection = transform.position.x > attackerPosition.x ? 1f : -1f;
-
-        // 2. Triệt tiêu vận tốc cũ để lực đẩy chuẩn xác
         rb.linearVelocity = Vector2.zero;
-
-        // 3. Áp dụng lực đẩy lùi
         rb.AddForce(new Vector2(knockbackDirection * knockbackForceX, knockbackForceY), ForceMode2D.Impulse);
 
-        // 4. Khóa di chuyển tạm thời tùy theo thực thể là Player hay Quái
         StartCoroutine(KnockbackRoutine());
     }
 
@@ -63,25 +81,48 @@ public class Health : MonoBehaviour
     {
         if (isPlayer && playerMovement != null)
         {
-            // Tận dụng biến isWallJumping hoặc tự tạo biến khóa di chuyển. 
-            // Ở đây mình mượn tạm biến isWallJumping của bạn vì nó có sẵn tính năng khóa MovePlayer() trong FixedUpdate!
-            // Cách này cực kỳ gọn mà không cần sửa cấu trúc code di chuyển của bạn.
             typeof(PlayerMovement).GetField("isWallJumping", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(playerMovement, true);
             typeof(PlayerMovement).GetField("wallJumpCounter", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(playerMovement, knockbackDuration);
         }
-        else
-        {
-            // Nếu là Quái: Có thể tạm thời tắt script AI hoặc dừng vận tốc tại đây nếu bạn có script AI sau này.
-        }
-
         yield return new WaitForSeconds(knockbackDuration);
     }
+
+    // COROUTINE XỬ LÝ BẤT TỬ & NHẤP NHÁY
+    private IEnumerator BecomeInvincibleRoutine()
+    {
+        isInvincible = true;
+
+        // Đổi sang Layer bất tử để đi xuyên qua quái (nhớ cài đặt Matrix Collision trong Project Settings)
+        gameObject.layer = invinciblePlayerLayer;
+
+        float timer = 0f;
+        while (timer < invincibleDuration)
+        {
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.enabled = !spriteRenderer.enabled; // Tắt/Bật hiển thị hình ảnh
+            }
+            yield return new WaitForSeconds(flashInterval);
+            timer += flashInterval;
+        }
+
+        // Trả lại trạng thái bình thường khi hết thời gian
+        if (spriteRenderer != null) spriteRenderer.enabled = true;
+        gameObject.layer = normalPlayerLayer;
+        isInvincible = false;
+    }
+
     void Die()
     {
         Debug.Log(gameObject.name + " đã chết!");
         if (isPlayer)
         {
             currentHealth = maxHealth;
+            // Nếu chết thì hồi sinh ngay lập tức phải reset lại layer và hiển thị cho chắc chắn
+            if (spriteRenderer != null) spriteRenderer.enabled = true;
+            gameObject.layer = normalPlayerLayer;
+            isInvincible = false;
+
             Debug.Log("Player hồi sinh tạm thời để test!");
         }
         else

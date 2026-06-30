@@ -98,7 +98,7 @@ public class WalkerAggressive : MonoBehaviour
         rb.linearVelocity = new Vector2(moveDir * chaseSpeed, rb.linearVelocity.y);
     }
 
-    // LOGIC TUẦN TRA BÌNH THƯỜNG (Giữ nguyên từ code cũ của bạn)
+    // LOGIC TUẦN TRA BÌNH THƯỜNG 
     void PatrolLogic()
     {
         float moveDir = movingRight ? 1f : -1f;
@@ -123,16 +123,6 @@ public class WalkerAggressive : MonoBehaviour
         Vector3 localScale = transform.localScale;
         localScale.x *= -1;
         transform.localScale = localScale;
-    }
-
-    // GÂY SÁT THƯƠNG KHI CHẠM
-    private void OnCollisionEnter2D(Collision2D collision)
-    {
-        if (collision.gameObject.CompareTag("Player"))
-        {
-            Debug.Log("Quái cắn trúng Player rồi!");
-            // Gọi hàm trừ máu Player ở đây nếu có (ví dụ: collision.gameObject.GetComponent<Health>().TakeDamage(10);)
-        }
     }
 
     // VẼ KHU VỰC PHÁT HIỆN ĐỂ DỄ CÂN BẰNG TRONG EDITOR

@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class EnemyBase : MonoBehaviour
 {
-    public enum EnemyState { Patrol, Chase, Attack, Die }
+    public enum EnemyState { Patrol, Chase, Attack, Die } // Tạo kiểu dữ liệu định nghĩa 4 trạng thái của enemy
 
     [Header("base state")]
     public EnemyState currentState = EnemyState.Patrol;
@@ -30,12 +30,12 @@ public class EnemyBase : MonoBehaviour
     protected virtual void Update()
     {
         if (currentState == EnemyState.Die) return;
-        EvalueteState();
+        EvaluateState();
         HandleStateBehavior();
     }
 
     // Đánh giá trạng thái dựa trên khoảng cách
-    protected virtual void EvalueteState()
+    protected virtual void EvaluateState()
     {
         if (player == null) return;
         float distance = Vector2.Distance(transform.position, player.position);
