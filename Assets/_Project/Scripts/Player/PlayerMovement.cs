@@ -1,5 +1,6 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
-using System.Collections; 
 public class PlayerMovement : MonoBehaviour
 {
     [Header("Movement Settings")]
@@ -9,6 +10,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private Vector2 wallJumpForce = new Vector2(10f, 14f);
     [SerializeField] private float wallJumpDuration = 0.15f;
     [SerializeField] private float wallCatchDelay = 0.1f;
+    [SerializeField] private float fallMultiplier = 2.5f;
 
     [Header("Ground/Wall Check Settings")]
     [SerializeField] private float groundCheckRadius = 0.2f;
@@ -37,6 +39,12 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 dashTargetPosition;
     private float originalGravity;
 
+    [Header("Dash Attack Settings")]
+    [SerializeField] private int dashDamage = 2;              // Sát thương khi dash xuyên qua quái
+    [SerializeField] private float dashDamageRadius = 0.6f;    // Bán kính quét sát thương xung quanh Player
+    private Health playerHealth;
+    private List<Collider2D> enemiesHitDuringDash = new List<Collider2D>();
+
     private Rigidbody2D rb;
     private float horizontalInput;
     private bool jumpInput;
@@ -50,6 +58,7 @@ public class PlayerMovement : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        playerHealth = GetComponent<Health>();
         originalGravity = rb.gravityScale;
     }
 
@@ -74,6 +83,7 @@ public class PlayerMovement : MonoBehaviour
         if (isDashing)
         {
             ExecuteDash();
+            HandleDashDamage();
             return;
         }
 
@@ -81,6 +91,12 @@ public class PlayerMovement : MonoBehaviour
         if (!isWallJumping) // Nếu đang trong thời gian nhảy bật tường, khóa phím di chuyển một tí để lực đẩy tự nhiên
         {
             MovePlayer();
+        }
+
+        if (rb.linearVelocity.y < 0) // Khi vận tốc trục Y nhỏ hơn 0, nghĩa là nhân vật đang trên đà RƠI XUỐNG
+        {
+            // Cộng thêm một lượng trọng lực gia tăng để kéo nhân vật xuống nhanh hơn
+            rb.linearVelocity += Vector2.up * Physics2D.gravity.y * (fallMultiplier - 1) * Time.fixedDeltaTime;
         }
 
         HandleWallSlidePhysics(); // Áp dụng lực trượt tường
@@ -274,6 +290,8 @@ public class PlayerMovement : MonoBehaviour
                     dashTargetPosition = activeSword.transform.position;
                     isDashing = true;
                     rb.gravityScale = 0f;
+                    enemiesHitDuringDash.Clear();
+                    if (playerHealth != null) playerHealth.SetDashInvincibility(true);
                 }
                 return;
             }
@@ -310,6 +328,10 @@ public class PlayerMovement : MonoBehaviour
             isDashing = false;
             rb.gravityScale = originalGravity;
             rb.linearVelocity = Vector2.zero;
+
+            if (playerHealth != null) playerHealth.SetDashInvincibility(false);
+
+            enemiesHitDuringDash.Clear();
 
             if (distanceToTarget < 0.4f)
             {
@@ -359,6 +381,27 @@ public class PlayerMovement : MonoBehaviour
                     Debug.Log("Nhân vật đi đến gần và tự động nhặt lại kiếm!");
                     Destroy(activeSword);
                     activeSword = null;
+                }
+            }
+        }
+    }
+
+    void HandleDashDamage()
+    {
+        // Quét tất cả vật thể thuộc enemyLayer nằm trong bán kính dashDamageRadius xung quanh người chơi
+        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(transform.position, dashDamageRadius, enemyLayer);
+
+        foreach (Collider2D enemy in hitEnemies)
+        {
+            if (!enemiesHitDuringDash.Contains(enemy))
+            {
+                Health enemyHealth = enemy.GetComponent<Health>();
+                if (enemyHealth != null)
+                {
+                    enemyHealth.TakeDamage(dashDamage, transform.position);
+
+                    // Thêm con quái này vào danh sách "đã xử lý" để các khung hình sau không quét lại nó nữa
+                    enemiesHitDuringDash.Add(enemy);
                 }
             }
         }

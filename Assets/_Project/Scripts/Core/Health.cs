@@ -112,6 +112,14 @@ public class Health : MonoBehaviour
         isInvincible = false;
     }
 
+    public void SetDashInvincibility(bool isInvincible)
+    {
+        if (isPlayer)
+        {
+            gameObject.layer = isInvincible ? LayerMask.NameToLayer("PlayerInvincible") : LayerMask.NameToLayer("Player");
+        }
+    }
+
     void Die()
     {
         Debug.Log(gameObject.name + " đã chết!");
